@@ -60,12 +60,9 @@ def formatPrice(n):
 
 def getStockDataVec(key):
     vec = []
-    lines = open(key + ".csv", "r").read().splitlines()
+    lines = open(f"stocks/{key}.csv", "r").read().splitlines()
     for line in lines[1:]:
-        # print(line)
-        # print(float(line.split(",")[4]))
         vec.append(float(line.split(",")[4]))
-        # print(vec)
     return vec
 
 
