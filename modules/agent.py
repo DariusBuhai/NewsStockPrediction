@@ -20,6 +20,7 @@ class Agent(News):
         self.df = pd.read_csv(f'../data/stocks/{stock}.csv')
         self.df['Date'] = pd.to_datetime(self.df['Date'])
         self.df.set_index('Date', inplace=True)
+        # TODO: https://towardsdatascience.com/creating-a-custom-openai-gym-environment-for-stock-trading-be532be3910e
         self.env = gym.make('stocks-v0', df=self.df, frame_bound=(5, 500), window_size=5)
         self.vec_env = DummyVecEnv([lambda: self.env])
         self.model = PPO("MlpPolicy", self.vec_env, verbose=1)
@@ -39,7 +40,6 @@ class Agent(News):
         plt.show()
 
     def train(self, verbose=1, timesteps=100000):
-        # TODO: implement custom stable_baselines3 like agent but with news rewards
         self.model.verbose = verbose
         self.model.learn(total_timesteps=timesteps)
 
