@@ -1,12 +1,9 @@
-import sys
+from matplotlib import pyplot as plt
 
 from modules.news import News
 
-sys.path.append('/home/dariusbuhai/python/lib/python3.9/site-packages')
-
 # Gym stuff
 import gym
-import gym_anytrading
 
 # Stable baselines - rl stuff
 from stable_baselines3.common.vec_env import DummyVecEnv
@@ -14,7 +11,7 @@ from stable_baselines3.common.vec_env import DummyVecEnv
 # Processing libraries
 import numpy as np
 import pandas as pd
-from matplotlib import pyplot as plt
+from stable_baselines3 import PPO
 
 
 class Agent(News):
@@ -23,12 +20,35 @@ class Agent(News):
         self.df = pd.read_csv(f'../data/stocks/{stock}.csv')
         self.df['Date'] = pd.to_datetime(self.df['Date'])
         self.df.set_index('Date', inplace=True)
-        env_maker = lambda: gym.make('stocks-v0', df=self.df, frame_bound=(5, 500), window_size=5)
-        self.env = DummyVecEnv([env_maker])
+        self.env = gym.make('stocks-v0', df=self.df, frame_bound=(5, 500), window_size=5)
+        self.vec_env = DummyVecEnv([lambda: self.env])
+        self.model = PPO("MlpPolicy", self.vec_env, verbose=1)
 
-    def train(self):
+    def test(self):
+        self.env.action_spacestate = self.env.reset()
+        while True:
+            action = self.env.action_space.sample()
+            n_state, reward, done, info = self.env.step(action)
+            if done:
+                print("info", info)
+                break
+
+        plt.figure(figsize=(15, 6))
+        plt.cla()
+        self.env.render_all()
+        plt.show()
+
+    def train(self, verbose=1, timesteps=100000):
         # TODO: implement custom stable_baselines3 like agent but with news rewards
-        from stable_baselines3 import PPO
+        self.model.verbose = verbose
+        self.model.learn(total_timesteps=timesteps)
 
-        model = PPO("MlpPolicy", self.env, verbose=1)
-        model.learn(total_timesteps=100000)
+    def evaluate(self):
+        obs = self.env.reset()
+        while True:
+            obs = obs[np.newaxis, ...]
+            action, _states = self.model.predict(obs)
+            obs, rewards, done, info = self.env.step(action)
+            if done:
+                print("info", info)
+                break
