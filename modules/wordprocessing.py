@@ -1,9 +1,14 @@
 from cube.api import Cube
 
+
+class WordProcessing:
+    @staticmethod
+    def getTextScore(text) -> int:
+        cube = Cube(verbose=False)
+        cube.load("en", device='cpu')
+        document = cube(text)
+        return 1
+
+
 if __name__ == '__main__':
-    cube = Cube(verbose=True)  # initialize it
-    cube.load("en", device='cpu')  # select the desired language (it will auto-download the model on first run)
-    text = "This is the text I want segmented, tokenized, lemmatized and annotated with POS and dependencies."
-    text2 = "Moderna has lost 13% of it's revenew"
-    document = cube(text)
-    print(document.sentences[0][2].upos)
+    print(WordProcessing.getTextScore("Moderna has lost 10% of it's revenew"))
