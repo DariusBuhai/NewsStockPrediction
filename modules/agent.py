@@ -1,9 +1,7 @@
 from matplotlib import pyplot as plt
 
+from modules.environment import StocksNewsEnv
 from modules.news import News
-
-# Gym stuff
-import gym
 
 # Stable baselines - rl stuff
 from stable_baselines3.common.vec_env import DummyVecEnv
@@ -19,9 +17,8 @@ class Agent(News):
         super().__init__(stock)
         self.df = pd.read_csv(f'../data/stocks/{stock}.csv')
         self.df['Date'] = pd.to_datetime(self.df['Date'])
-        self.df.set_index('Date', inplace=True)
-        # TODO: https://towardsdatascience.com/creating-a-custom-openai-gym-environment-for-stock-trading-be532be3910e
-        self.env = gym.make('stocks-v0', df=self.df, frame_bound=(5, 500), window_size=5)
+        self.df.sort_values('Date')
+        self.env = StocksNewsEnv(self.df, frame_bound=(5, 500), window_size=5)
         self.vec_env = DummyVecEnv([lambda: self.env])
         self.model = PPO("MlpPolicy", self.vec_env, verbose=1)
 
@@ -39,9 +36,9 @@ class Agent(News):
         self.env.render_all()
         plt.show()
 
-    def train(self, verbose=1, timesteps=100000):
+    def train(self, verbose=1, steps=100000):
         self.model.verbose = verbose
-        self.model.learn(total_timesteps=timesteps)
+        self.model.learn(total_timesteps=steps)
 
     def evaluate(self):
         obs = self.env.reset()

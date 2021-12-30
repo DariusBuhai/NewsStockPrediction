@@ -6,3 +6,6 @@ gym-anytrading==1.2.0
 stable-baselines3==1.3.0
 tensorflow==2.7.0
 tensorflow-gpu==2.7.0
+requests~=2.26.0
+pandas~=1.3.5
+matplotlib~=3.5.1
