@@ -30,7 +30,9 @@ class Agent(News):
             if done:
                 print("info", info)
                 break
+        self.show()
 
+    def show(self):
         plt.figure(figsize=(15, 6))
         plt.cla()
         self.env.render_all()

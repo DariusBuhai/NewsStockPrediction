@@ -57,7 +57,11 @@ class News(WordProcessing):
         # TODO: Process each news using wordprocessing
         filepath = f"../data/news/{self.stock}.json"
         with open(filepath, "r") as r:
-            return json.loads(r.read())
+            news_per_days = json.loads(r.read())
+        for day in news_per_days.keys():
+            for article in news_per_days[day]['articles']:
+                article['score'] = self.getTextScore(article['content'])
+        return news_per_days
 
 
 if __name__ == '__main__':
