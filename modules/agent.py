@@ -10,7 +10,6 @@ from stable_baselines3.common.vec_env import DummyVecEnv
 # Processing libraries
 import numpy as np
 import pandas as pd
-from stable_baselines3 import PPO
 
 
 class Agent(News):
