@@ -51,19 +51,19 @@ class News(WordProcessing):
     @staticmethod
     def saveNews(keyword, stock):
         news_per_day = News.categorizeNewsPerDays(keyword, (date.today() - timedelta(days=30), date.today()))
-        filepath = f"data/news/{stock}.json"
+        filepath = f"../data/news/{stock}.json"
         with open(filepath, "w") as f:
             f.write(json.dumps(news_per_day))
         print(f"News saved to {filepath}")
 
     def loadNews(self):
         # TODO: Process each news using wordprocessing
-        filepath = f"data/news/{self.stock}.json"
+        filepath = f"../data/news/{self.stock}.json"
         with open(filepath, "r") as r:
             news_per_days = json.loads(r.read())
-        for day in news_per_days.keys():
-            for article in news_per_days[day]['articles']:
-                article['score'] = self.getTextScore(article['content'])
+        # for day in news_per_days.keys():
+        #     for article in news_per_days[day]['articles']:
+        #         article['score'] = self.getTextScore(article['content'])
         return news_per_days
 
 

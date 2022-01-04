@@ -1,6 +1,6 @@
 from keras.models import Sequential
 from keras.layers import Dense
-from keras.optimizers import adam_v2
+from keras.optimizer_v2 import optimizer_v2
 
 import math
 import numpy as np
@@ -14,7 +14,7 @@ def sigmoid(x):
     return 1 / (1 + math.exp(-x))
 
 
-class DeepLearningModel():
+class DeepLearningModel:
     def __init__(self, env: StocksNewsEnv):
         #  Same initializations as in our previous agent.
         self.env = env
@@ -35,14 +35,14 @@ class DeepLearningModel():
         model.add(Dense(units=32, activation='relu'))
         model.add(Dense(units=8, activation='relu'))
         model.add(Dense(self.action_size, activation='linear'))
-        model.compile(loss='mse', optimizer=adam_v2)
+        model.compile(loss='mse', optimizer='adam')
         return model
 
     #  To implement:
     #       -> learn(total_timesteps)
 
     def learn(self, total_timesteps):
-        for episode in range(len(total_timesteps)):
+        for episode in range(total_timesteps):
             state = self.env.reset()
             self.epsilon *= self.epsilon_decay
             done = False
