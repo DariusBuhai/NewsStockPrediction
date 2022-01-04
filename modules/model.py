@@ -1,6 +1,5 @@
 from keras.models import Sequential
 from keras.layers import Dense
-from keras.optimizer_v2 import optimizer_v2
 
 import math
 import numpy as np
