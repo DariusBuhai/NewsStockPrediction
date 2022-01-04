@@ -2,7 +2,6 @@ import json
 
 import requests
 from datetime import date, timedelta
-import csv
 
 from modules.wordprocessing import WordProcessing
 
@@ -32,7 +31,7 @@ class News(WordProcessing):
         # sending get request and saving the response as response object
         r = requests.get(url=NEWS_URI, params=PARAMS)
 
-        # extracting data in json format
+        # extracting data
         return r.json()
 
     @staticmethod
@@ -41,21 +40,25 @@ class News(WordProcessing):
             interval = (date.today(), date.today())
         categorized_news = dict()
         current_day = interval[1]
+        print("Loading news: ")
         while current_day >= interval[0]:
             categorized_news[str(current_day)] = News.getNewsFromApi(keywords, (current_day, current_day))
             current_day -= timedelta(days=1)
+            print("#", end="")
+        print("\nDone.")
         return categorized_news
 
     @staticmethod
     def saveNews(keyword, stock):
-        news_per_day = News.categorizeNewsPerDays(keyword, (date.today() - timedelta(days=365), date.today()))
-        filepath = f"../data/news/{stock}.json"
+        news_per_day = News.categorizeNewsPerDays(keyword, (date.today() - timedelta(days=30), date.today()))
+        filepath = f"data/news/{stock}.json"
         with open(filepath, "w") as f:
             f.write(json.dumps(news_per_day))
+        print(f"News saved to {filepath}")
 
     def loadNews(self):
         # TODO: Process each news using wordprocessing
-        filepath = f"../data/news/{self.stock}.json"
+        filepath = f"data/news/{self.stock}.json"
         with open(filepath, "r") as r:
             news_per_days = json.loads(r.read())
         for day in news_per_days.keys():
@@ -65,4 +68,4 @@ class News(WordProcessing):
 
 
 if __name__ == '__main__':
-    News.saveNews("Vanguard S&P 500", "VOO")
+    News.saveNews("UiPath", "PATH")
