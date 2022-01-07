@@ -1,4 +1,5 @@
 import json
+import os.path
 
 import requests
 from datetime import date, timedelta
@@ -12,17 +13,25 @@ NEWS_SOURCES = ""
 
 class News(WordProcessing):
 
+    KEYWORDS = {
+        "PATH": "UiPath",
+        "MDRN": "Moderna",
+        "PFE": "Pfizer",
+        "VOO": "Vanguard S&P",
+    }
+
     def __init__(self, stock):
+        self.news_per_days = dict()
         self.stock = stock
         self.loadNews()
 
-    @staticmethod
-    def getNewsFromApi(keywords="", interval=None):
+    def getNewsFromApi(self, interval=None):
+        keyword = self.KEYWORDS[self.stock]
         if not interval:
             interval = (date.today(), date.today())
         # defining a params dict for the parameters to be sent to the API
         PARAMS = {'apiKey': NEWS_API_KEY,
-                  'qInTitle': keywords,
+                  'qInTitle': keyword,
                   'language': "en",
                   'sortBy': 'relevancy',
                   'from': str(interval[0]),
@@ -34,38 +43,33 @@ class News(WordProcessing):
         # extracting data
         return r.json()
 
-    @staticmethod
-    def categorizeNewsPerDays(keywords="", interval=None):
+    def categorizeNewsPerDays(self, interval=None):
         if not interval:
             interval = (date.today(), date.today())
-        categorized_news = dict()
         current_day = interval[1]
         print("Loading news: ")
         while current_day >= interval[0]:
-            categorized_news[str(current_day)] = News.getNewsFromApi(keywords, (current_day, current_day))
+            if str(current_day) not in self.news_per_days.keys():
+                self.news_per_days[str(current_day)] = self.getNewsFromApi((current_day, current_day))
             current_day -= timedelta(days=1)
             print("#", end="")
         print("\nDone.")
-        return categorized_news
 
-    @staticmethod
-    def saveNews(keyword, stock):
-        news_per_day = News.categorizeNewsPerDays(keyword, (date.today() - timedelta(days=30), date.today()))
-        filepath = f"data/news/{stock}.json"
+    def saveNews(self):
+        self.categorizeNewsPerDays((date.today() - timedelta(days=31), date.today()))
+        filepath = f"../data/news/{self.stock}.json"
         with open(filepath, "w") as f:
-            f.write(json.dumps(news_per_day))
+            f.write(json.dumps(self.news_per_days))
         print(f"News saved to {filepath}")
 
     def loadNews(self):
         # TODO: Process each news using wordprocessing
-        filepath = f"data/news/{self.stock}.json"
-        with open(filepath, "r") as r:
-            news_per_days = json.loads(r.read())
-        for day in news_per_days.keys():
-            for article in news_per_days[day]['articles']:
-                article['score'] = self.getTextScore(article['content'])
-        return news_per_days
+        filepath = f"../data/news/{self.stock}.json"
+        if os.path.exists(filepath):
+            with open(filepath, "r") as r:
+                self.news_per_days = json.loads(r.read())
 
 
 if __name__ == '__main__':
-    News.saveNews("UiPath", "PATH")
+    news = News("MDRN")
+    news.saveNews()

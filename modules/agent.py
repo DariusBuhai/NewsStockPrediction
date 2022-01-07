@@ -1,7 +1,8 @@
 from matplotlib import pyplot as plt
 
-from modules.environment import StocksNewsEnv
-from modules.news import News
+from environment import StocksNewsEnv
+from news import News
+from model import DeepLearningModel
 
 # Stable baselines - rl stuff
 from stable_baselines3.common.vec_env import DummyVecEnv
@@ -9,7 +10,6 @@ from stable_baselines3.common.vec_env import DummyVecEnv
 # Processing libraries
 import numpy as np
 import pandas as pd
-from stable_baselines3 import PPO
 
 
 class Agent(News):
@@ -20,7 +20,7 @@ class Agent(News):
         self.df.sort_values('Date')
         self.env = StocksNewsEnv(self.df, frame_bound=(5, 500), window_size=5)
         self.vec_env = DummyVecEnv([lambda: self.env])
-        self.model = PPO("MlpPolicy", self.vec_env, verbose=1)
+        self.model = DeepLearningModel(self.env)
 
     def test(self):
         self.env.action_spacestate = self.env.reset()
