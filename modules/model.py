@@ -1,12 +1,18 @@
 from keras.models import Sequential
 from keras.layers import Dense, InputLayer
+import tensorflow as tf
 
 import math
 import numpy as np
 from collections import deque
+import keras
 
 #  Same imports as before here
 from environment import StocksNewsEnv
+
+# config = tf.ConfigProto( device_count = {'GPU': 1 , 'CPU': 16} )
+# sess = tf.Session(config=config)
+# keras.backend.set_session(sess)
 
 
 def sigmoid(x):
@@ -20,19 +26,22 @@ class DeepLearningModel:
 
         self.action_size = 2  # Sell, Buy
         self.state_size = 2  # Short, Long
-        self.observation_size = self.env.window_size
+        self.observation_size = self.env.window_size  #  5
         self.memory = deque(maxlen=1000)
         #  We'll have to finetune the ones below and see which ones give the best results.
         self.gamma = 0.95
         self.epsilon = 1.0
         self.epsilon_min = 0.01
-        self.epsilon_decay = 0.995
+        self.epsilon_decay = 0.95
         self.model = self._model()
+
+    def update_env(self, env_new: StocksNewsEnv):
+        self.env = env_new
 
     def _model(self):
         model = Sequential()  # This allows us to specify the network layers in a sequential manner
-        model.add(InputLayer(batch_input_shape=(1, self.observation_size)))
-        model.add(Dense(units=64, input_dim=(1, self.observation_size), activation='relu'))
+        model.add(InputLayer(batch_input_shape=(1, 2 + self.observation_size)))
+        model.add(Dense(units=64, input_dim=(1, 2 + self.observation_size), activation='relu'))
         model.add(Dense(units=32, activation='relu'))
         model.add(Dense(units=8, activation='relu'))
         model.add(Dense(self.action_size, activation='linear'))
@@ -50,15 +59,19 @@ class DeepLearningModel:
     def get_input_tensor(self, observation):
         input_tensor = np.reshape(observation[:, 1], (1, self.observation_size))
         input_tensor = self.normalize(input_tensor)
-        return input_tensor
+        result_tensor = np.zeros((1, self.observation_size + 2))
+        result_tensor[0, 2:] = input_tensor
+        return result_tensor
 
     def learn(self, total_timesteps):
         for episode in range(total_timesteps):
             print('Episode: ' + str(episode))
 
-            observation = self.env.reset()
+            observation, balance, shares = self.env.reset()
             observation = self.get_input_tensor(observation)
-            self.epsilon *= self.epsilon_decay
+            observation[0][0] = balance
+            observation[0][1] = shares
+
             done = False
 
             while not done:
@@ -69,8 +82,11 @@ class DeepLearningModel:
                     #  Let the agent choose the best action according to what they learned so far.
                     action = self.predict(observation)
 
-                new_observation, reward, done, _ = self.env.step(action)
+                self.epsilon *= self.epsilon_decay
+                new_observation, reward, done, info = self.env.step(action)
                 new_observation = self.get_input_tensor(new_observation)
+                new_observation[0][0] = info['balance']
+                new_observation[0][1] = info['shares']
 
                 target = reward
                 if not done:

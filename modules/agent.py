@@ -3,12 +3,6 @@ from matplotlib import pyplot as plt
 from environment import StocksNewsEnv
 from news import News
 from model import DeepLearningModel
-
-# Stable baselines - rl stuff
-from stable_baselines3.common.vec_env import DummyVecEnv
-
-# Processing libraries
-import numpy as np
 import pandas as pd
 
 
@@ -18,8 +12,7 @@ class Agent(News):
         self.df = pd.read_csv(f'../data/stocks/{stock}.csv')
         self.df['Date'] = pd.to_datetime(self.df['Date'])
         self.df.sort_values('Date')
-        self.env = StocksNewsEnv(self.df, frame_bound=(5, 500), window_size=5)
-        self.vec_env = DummyVecEnv([lambda: self.env])
+        self.env = StocksNewsEnv(self.df, frame_bound=(5, 200), window_size=5)
         self.model = DeepLearningModel(self.env)
 
     def test(self):
@@ -43,11 +36,18 @@ class Agent(News):
         self.model.learn(total_timesteps=steps)
 
     def evaluate(self):
-        obs = self.env.reset()
+        self.env = StocksNewsEnv(self.df, frame_bound=(200, 250), window_size=5)
+        self.model.update_env(self.env)
+        obs, balance, shares = self.env.reset()
         while True:
-            obs = obs[np.newaxis, ...]
-            action, _states = self.model.predict(obs)
+            # obs = obs[np.newaxis, ...]
+            obs_fixed = self.model.get_input_tensor(obs)
+            obs_fixed[0][0] = balance
+            obs_fixed[0][1] = shares
+            action = self.model.predict(obs_fixed)
             obs, rewards, done, info = self.env.step(action)
+            balance = info['balance']
+            shares = info['shares']
             if done:
                 print("info", info)
                 break

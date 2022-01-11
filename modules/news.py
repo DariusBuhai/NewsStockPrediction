@@ -4,7 +4,7 @@ import os.path
 import requests
 from datetime import date, timedelta
 
-from modules.wordprocessing import WordProcessing
+from wordprocessing import WordProcessing
 
 NEWS_URI = "https://newsapi.org/v2/everything"
 NEWS_API_KEY = "2fdb18e9297a437ab91a7ec7669bed35"
