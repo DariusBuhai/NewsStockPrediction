@@ -1,7 +1,7 @@
 from matplotlib import pyplot as plt
 
-from environment import StocksNewsEnv
-from news import News
+from modules.environment import StocksNewsEnv
+from modules.news import News
 from model import DeepLearningModel
 import pandas as pd
 
@@ -14,6 +14,10 @@ class Agent(News):
         self.df.sort_values('Date')
         self.env = StocksNewsEnv(self.df, frame_bound=(5, 200), window_size=5)
         self.model = DeepLearningModel(self.env)
+        try:
+            self.model.load_best()
+        except Exception as e:
+            print(f"Cannot load model, Error {e}")
 
     def test(self):
         self.env.action_spacestate = self.env.reset()

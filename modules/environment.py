@@ -1,5 +1,5 @@
 import numpy as np
-from trading_environment import TradingEnv, Actions
+from modules.trading_environment import TradingEnv, Actions
 
 
 # TODO: Edit this environment and add news rewards
@@ -13,10 +13,6 @@ class StocksNewsEnv(TradingEnv):
 
         self.trade_fee_bid_percent = 0.01
         self.trade_fee_ask_percent = 0.005
-
-    # def update_frame_bounds(self, frame_bound):
-    #     self.frame_bound = frame_bound
-    #     super().__init__()
 
     def _process_data(self):
         prices = self.df.loc[:, 'Close'].to_numpy()

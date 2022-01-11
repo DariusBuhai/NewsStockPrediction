@@ -1,18 +1,15 @@
-from keras.models import Sequential
-from keras.layers import Dense, InputLayer
+from keras.models import Sequential, load_model
+from keras.layers import Dense, InputLayer, Dropout
+from keras.callbacks import ModelCheckpoint
 import tensorflow as tf
+from os import path
 
 import math
 import numpy as np
 from collections import deque
-import keras
 
 #  Same imports as before here
 from environment import StocksNewsEnv
-
-# config = tf.ConfigProto( device_count = {'GPU': 1 , 'CPU': 16} )
-# sess = tf.Session(config=config)
-# keras.backend.set_session(sess)
 
 
 def sigmoid(x):
@@ -20,13 +17,15 @@ def sigmoid(x):
 
 
 class DeepLearningModel:
+    BEST_MODEL = '../data/models/best_model.h5'
+
     def __init__(self, env: StocksNewsEnv):
         #  Same initializations as in our previous agent.
         self.env = env
 
         self.action_size = 2  # Sell, Buy
         self.state_size = 2  # Short, Long
-        self.observation_size = self.env.window_size  #  5
+        self.observation_size = self.env.window_size  # 5
         self.memory = deque(maxlen=1000)
         #  We'll have to finetune the ones below and see which ones give the best results.
         self.gamma = 0.95
@@ -35,6 +34,12 @@ class DeepLearningModel:
         self.epsilon_decay = 0.95
         self.model = self._model()
 
+        self.model_checkpoint = ModelCheckpoint(self.BEST_MODEL, save_best_only=False, verbose=0)
+
+    def load_best(self):
+        if path.isfile(self.BEST_MODEL):
+            self.model = load_model(self.BEST_MODEL)
+
     def update_env(self, env_new: StocksNewsEnv):
         self.env = env_new
 
@@ -42,10 +47,11 @@ class DeepLearningModel:
         model = Sequential()  # This allows us to specify the network layers in a sequential manner
         model.add(InputLayer(batch_input_shape=(1, 2 + self.observation_size)))
         model.add(Dense(units=64, input_dim=(1, 2 + self.observation_size), activation='relu'))
+        model.add(Dropout(0.3))
         model.add(Dense(units=32, activation='relu'))
         model.add(Dense(units=8, activation='relu'))
         model.add(Dense(self.action_size, activation='linear'))
-        model.compile(loss='mse', optimizer='adam', metrics=['mae'])
+        model.compile(loss='mse', optimizer='adam', metrics=['mae', 'accuracy'])
         return model
 
     #  Receives a (1, observation_size) sized array.
@@ -102,7 +108,8 @@ class DeepLearningModel:
                     observation,
                     target_f,
                     epochs=1,
-                    verbose=0
+                    verbose=0,
+                    callbacks=[self.model_checkpoint]
                 )
 
                 observation = new_observation

@@ -98,9 +98,9 @@ class TradingEnv(gym.Env):
         def _plot_position(position, tick):
             color = None
             if position > 0:
-                color = 'red'
-            elif position <= 0:
                 color = 'green'
+            elif position <= 0:
+                color = 'red'
             if color:
                 plt.scatter(tick, self.prices[tick], color=color)
 
