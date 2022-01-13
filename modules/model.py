@@ -9,7 +9,7 @@ import numpy as np
 from collections import deque
 
 #  Same imports as before here
-from environment import StocksNewsEnv
+from modules.environment import StocksNewsEnv
 
 
 def sigmoid(x):
@@ -17,7 +17,7 @@ def sigmoid(x):
 
 
 class DeepLearningModel:
-    BEST_MODEL = '../data/models/best_model.h5'
+    BEST_MODEL = 'data/models/best_model.h5'
 
     def __init__(self, env: StocksNewsEnv):
         #  Same initializations as in our previous agent.

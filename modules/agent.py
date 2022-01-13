@@ -2,14 +2,16 @@ from matplotlib import pyplot as plt
 
 from modules.environment import StocksNewsEnv
 from modules.news import News
-from model import DeepLearningModel
+from modules.model import DeepLearningModel
 import pandas as pd
 
 
 class Agent(News):
+    STOCKS_PATH = "data/stocks/"
+
     def __init__(self, stock):
         super().__init__(stock)
-        self.df = pd.read_csv(f'../data/stocks/{stock}.csv')
+        self.df = pd.read_csv(f'{self.STOCKS_PATH}{stock}.csv')
         self.df['Date'] = pd.to_datetime(self.df['Date'])
         self.df.sort_values('Date')
         self.env = StocksNewsEnv(self.df, frame_bound=(5, 200), window_size=5)
@@ -44,7 +46,6 @@ class Agent(News):
         self.model.update_env(self.env)
         obs, balance, shares = self.env.reset()
         while True:
-            # obs = obs[np.newaxis, ...]
             obs_fixed = self.model.get_input_tensor(obs)
             obs_fixed[0][0] = balance
             obs_fixed[0][1] = shares

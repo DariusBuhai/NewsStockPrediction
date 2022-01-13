@@ -13,6 +13,8 @@ NEWS_SOURCES = ""
 
 class News(WordProcessing):
 
+    NEWS_PATH = "data/news/"
+
     KEYWORDS = {
         "PATH": "UiPath",
         "MDRN": "Moderna",
@@ -57,14 +59,14 @@ class News(WordProcessing):
 
     def saveNews(self):
         self.categorizeNewsPerDays((date.today() - timedelta(days=31), date.today()))
-        filepath = f"../data/news/{self.stock}.json"
+        filepath = f"{self.NEWS_PATH}{self.stock}.json"
         with open(filepath, "w") as f:
             f.write(json.dumps(self.news_per_days))
         print(f"News saved to {filepath}")
 
     def loadNews(self):
         # TODO: Process each news using wordprocessing
-        filepath = f"../data/news/{self.stock}.json"
+        filepath = f"{self.NEWS_PATH}{self.stock}.json"
         if os.path.exists(filepath):
             with open(filepath, "r") as r:
                 self.news_per_days = json.loads(r.read())
