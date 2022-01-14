@@ -4,16 +4,14 @@ import os.path
 import requests
 from datetime import date, timedelta
 
-from modules.wordprocessing import WordProcessing
-
 NEWS_URI = "https://newsapi.org/v2/everything"
 NEWS_API_KEY = "2fdb18e9297a437ab91a7ec7669bed35"
 NEWS_SOURCES = ""
 
 
-class News(WordProcessing):
+class News():
 
-    NEWS_PATH = "data/news/"
+    NEWS_PATH = "../data/news/"
 
     KEYWORDS = {
         "PATH": "UiPath",
