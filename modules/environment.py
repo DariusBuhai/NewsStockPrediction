@@ -2,20 +2,19 @@ import numpy as np
 from modules.trading_environment import TradingEnv, Actions
 
 
-# TODO: Edit this environment and add news rewards
 class StocksNewsEnv(TradingEnv):
 
-    def __init__(self, df, window_size, frame_bound, initial_balance=100):
+    def __init__(self, stocks_df, news_df, bao, window_size, frame_bound, initial_balance=100):
         assert len(frame_bound) == 2
 
         self.frame_bound = frame_bound
-        super().__init__(df, window_size, initial_balance)
+        super().__init__(stocks_df=stocks_df, news_df=news_df, bao=bao, window_size=window_size, initial_balance=initial_balance)
 
         self.trade_fee_bid_percent = 0.01
         self.trade_fee_ask_percent = 0.005
 
     def _process_data(self):
-        prices = self.df.loc[:, 'Close'].to_numpy()
+        prices = self.stocks_df.loc[:, 'Close'].to_numpy()
 
         prices = prices[self.frame_bound[0] - self.window_size:self.frame_bound[1]]
 
@@ -33,7 +32,6 @@ class StocksNewsEnv(TradingEnv):
     def _update_profit(self, action):
 
         current_price = self.prices[self._current_tick]
-        last_trade_price = self.prices[self._last_trade_tick]
         current_share = min(1, self._balance * (1 - self.trade_fee_ask_percent) / current_price)
 
         # Update balance and shares
@@ -49,26 +47,16 @@ class StocksNewsEnv(TradingEnv):
 
     def max_possible_profit(self):
         current_tick = self._start_tick
-        last_trade_tick = current_tick - 1
-        profit = 1.
+        profit = 0
 
         while current_tick <= self._end_tick:
             if self.prices[current_tick] < self.prices[current_tick - 1]:
                 while (current_tick <= self._end_tick and
                        self.prices[current_tick] < self.prices[current_tick - 1]):
                     current_tick += 1
-                # position = Positions.Short
             else:
                 while (current_tick <= self._end_tick and
                        self.prices[current_tick] >= self.prices[current_tick - 1]):
                     current_tick += 1
-                # position = Positions.Long
-
-            # if position == Positions.Long:
-            #     current_price = self.prices[current_tick - 1]
-            #     last_trade_price = self.prices[last_trade_tick]
-            #     shares = profit / last_trade_price
-            #     profit = shares * current_price
-            last_trade_tick = current_tick - 1
 
         return profit

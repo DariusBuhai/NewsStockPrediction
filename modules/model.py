@@ -47,7 +47,7 @@ class DeepLearningModel:
         model = Sequential()  # This allows us to specify the network layers in a sequential manner
         model.add(InputLayer(batch_input_shape=(1, 2 + self.observation_size)))
         model.add(Dense(units=64, input_dim=(1, 2 + self.observation_size), activation='relu'))
-        model.add(Dropout(0.3))
+        model.add(Dropout(0.4))
         model.add(Dense(units=32, activation='relu'))
         model.add(Dense(units=8, activation='relu'))
         model.add(Dense(self.action_size, activation='linear'))
@@ -113,6 +113,9 @@ class DeepLearningModel:
                 )
 
                 observation = new_observation
+
+                print("#", end="")
+            print()
 
     #  Returns the predicted action based on given observation.
     def predict(self, observations):

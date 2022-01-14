@@ -1,20 +1,22 @@
 from matplotlib import pyplot as plt
 
 from modules.environment import StocksNewsEnv
-from modules.news import News
 from modules.model import DeepLearningModel
 import pandas as pd
 
+from modules.wordprocessing import WordProcessing
 
-class Agent(News):
+
+class Agent(WordProcessing):
     STOCKS_PATH = "data/stocks/"
 
     def __init__(self, stock):
         super().__init__(stock)
+        self.bao = self.getBagOfWords()
         self.df = pd.read_csv(f'{self.STOCKS_PATH}{stock}.csv')
         self.df['Date'] = pd.to_datetime(self.df['Date'])
         self.df.sort_values('Date')
-        self.env = StocksNewsEnv(self.df, frame_bound=(5, 200), window_size=5)
+        self.env = StocksNewsEnv(stocks_df=self.df, news_df=self.news_per_days, bao=self.bao, frame_bound=(5, 200), window_size=5)
         self.model = DeepLearningModel(self.env)
         try:
             self.model.load_best()
@@ -42,7 +44,7 @@ class Agent(News):
         self.model.learn(total_timesteps=steps)
 
     def evaluate(self):
-        self.env = StocksNewsEnv(self.df, frame_bound=(200, 250), window_size=5)
+        self.env = StocksNewsEnv(stocks_df=self.df, news_df=self.news_per_days, bao=self.bao, frame_bound=(200, 250), window_size=5)
         self.model.update_env(self.env)
         obs, balance, shares = self.env.reset()
         while True:

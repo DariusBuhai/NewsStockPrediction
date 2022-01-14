@@ -14,11 +14,13 @@ class Actions(Enum):
 class TradingEnv(gym.Env):
     metadata = {'render.modes': ['human']}
 
-    def __init__(self, df, window_size, initial_balance=100):
-        assert df.ndim == 2
+    def __init__(self, stocks_df, news_df, bao, window_size, initial_balance=100):
+        assert stocks_df.ndim == 2
 
         self.seed()
-        self.df = df
+        self.stocks_df = stocks_df
+        self.news_df = news_df
+        self.bao = bao
         self.window_size = window_size
         self.prices, self.signal_features = self._process_data()
         self.shape = (window_size, self.signal_features.shape[1])
@@ -35,8 +37,8 @@ class TradingEnv(gym.Env):
         self._last_trade_tick = None
         self._position = None
         self._profit_history = None
-        self._total_reward = None
-        self._total_profit = None
+        self._total_reward = 0
+        self._total_profit = 0
         self._first_rendering = None
         self.history = None
 
@@ -84,6 +86,7 @@ class TradingEnv(gym.Env):
         return observation, step_reward, self._done, info
 
     def _get_observation(self):
+        observation = self.signal_features[(self._current_tick - self.window_size):self._current_tick]
         return self.signal_features[(self._current_tick - self.window_size):self._current_tick], self._balance, self._shares
 
     def _update_history(self, info):

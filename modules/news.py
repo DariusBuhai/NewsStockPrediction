@@ -11,7 +11,7 @@ NEWS_SOURCES = ""
 
 class News():
 
-    NEWS_PATH = "../data/news/"
+    NEWS_PATH = "data/news/"
 
     KEYWORDS = {
         "PATH": "UiPath",
