@@ -6,6 +6,8 @@
 ## Project description
 Predict and learn how to trade based on stock prices and news analytics.
 
+
+
 ## Implementation
 
  - News Analysis:
@@ -16,6 +18,10 @@ Predict and learn how to trade based on stock prices and news analytics.
    - Stocks are brought from Yahoo Finance and stored locally as CSV files; 
    - We use Gym in order to generate our environment (Default environment: **stocks-v0**);
    - We use Stable Baseline (V3) in order to train our model (MlpPolicy);
+
+ - Model:
+   - 39: 5 stocks, 1 amount, 1 shares, Top 30 cuvinte (BAO), 2 campuri sentimental analysis
+   - Remember sentimental analysis based on stock growth
 
 ## Algorithm
 **TO BE DESCRIBED**
