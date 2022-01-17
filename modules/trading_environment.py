@@ -23,11 +23,11 @@ class TradingEnv(gym.Env):
         self.bao = bao
         self.window_size = window_size
         self.prices, self.signal_features = self._process_data()
-        self.shape = (window_size, self.signal_features.shape[1])
+        self.shape = self.signal_features.shape
 
         # spaces
         self.action_space = spaces.Discrete(len(Actions))
-        self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=self.shape, dtype=np.float32)
+        self.observation_space = self.shape[1]
 
         # episode
         self._start_tick = self.window_size
@@ -74,20 +74,19 @@ class TradingEnv(gym.Env):
         self._total_reward += step_reward
 
         self._profit_history.append(self._total_profit)
-        observation, balance, shares = self._get_observation()
+        observation = self._get_observation()
         info = dict(
             total_reward=self._total_reward,
             total_profit=self._total_profit,
-            shares=shares,
-            balance=balance
+            shares=self._shares,
+            balance=self._balance
         )
         self._update_history(info)
 
         return observation, step_reward, self._done, info
 
     def _get_observation(self):
-        observation = self.signal_features[(self._current_tick - self.window_size):self._current_tick]
-        return self.signal_features[(self._current_tick - self.window_size):self._current_tick], self._balance, self._shares
+        return self.signal_features[self._current_tick]
 
     def _update_history(self, info):
         if not self.history:

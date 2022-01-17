@@ -13,15 +13,43 @@ class StocksNewsEnv(TradingEnv):
         self.trade_fee_bid_percent = 0.01
         self.trade_fee_ask_percent = 0.005
 
+    # TODO: Adapt and modify features
+    # Current features: (31) -> [price - size(1), bag of words - size(30)]
     def _process_data(self):
+        # Prices
         prices = self.stocks_df.loc[:, 'Close'].to_numpy()
-
         prices = prices[self.frame_bound[0] - self.window_size:self.frame_bound[1]]
 
-        diff = np.insert(np.diff(prices), 0, 0)
-        signal_features = np.column_stack((prices, diff))
+        # Calculate price features for each trade day
+        price_features = []
+        for price in prices:
+            price_features.append([price])
+        price_features = np.array(price_features)
 
-        return prices, signal_features
+        # Articles for each day
+        trade_days = [x.strftime("%Y-%m-%d") for x in list(self.stocks_df.loc[:, 'Date'][self.frame_bound[0] - self.window_size:self.frame_bound[1]])]
+        articles = []
+        for trade_day in trade_days:
+            if trade_day in self.news_df.keys():
+                articles.append(self.news_df[trade_day]['articles'])
+            else:
+                articles.append([])
+        article_features = []
+        words_usages = dict()
+        for day in articles:
+            for word in self.bao:
+                words_usages[word] = 0
+            for article in day:
+                for word in article['content'].split():
+                    if word in words_usages.keys():
+                        words_usages[word] += 1
+            article_features.append(list(words_usages.values()))
+        article_features = np.array(article_features)
+
+        # Concatenate features
+        features = np.concatenate((price_features, article_features), axis=1)
+
+        return prices, features
 
     def _calculate_reward(self, action):
         if action == Actions.Sell.value:

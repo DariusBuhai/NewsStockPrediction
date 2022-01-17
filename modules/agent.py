@@ -12,7 +12,7 @@ class Agent(WordProcessing):
 
     def __init__(self, stock):
         super().__init__(stock)
-        self.bao = self.getBagOfWords()
+        self.bao = self.getMostUsedWords()
         self.df = pd.read_csv(f'{self.STOCKS_PATH}{stock}.csv')
         self.df['Date'] = pd.to_datetime(self.df['Date'])
         self.df.sort_values('Date')
@@ -46,15 +46,11 @@ class Agent(WordProcessing):
     def evaluate(self):
         self.env = StocksNewsEnv(stocks_df=self.df, news_df=self.news_per_days, bao=self.bao, frame_bound=(200, 250), window_size=5)
         self.model.update_env(self.env)
-        obs, balance, shares = self.env.reset()
+        obs = self.env.reset()
         while True:
             obs_fixed = self.model.get_input_tensor(obs)
-            obs_fixed[0][0] = balance
-            obs_fixed[0][1] = shares
             action = self.model.predict(obs_fixed)
             obs, rewards, done, info = self.env.step(action)
-            balance = info['balance']
-            shares = info['shares']
             if done:
                 print("info", info)
                 break

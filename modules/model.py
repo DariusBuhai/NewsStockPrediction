@@ -25,7 +25,7 @@ class DeepLearningModel:
 
         self.action_size = 2  # Sell, Buy
         self.state_size = 2  # Short, Long
-        self.observation_size = self.env.window_size  # 5
+        self.observation_size = self.env.observation_space
         self.memory = deque(maxlen=1000)
         #  We'll have to finetune the ones below and see which ones give the best results.
         self.gamma = 0.95
@@ -45,8 +45,8 @@ class DeepLearningModel:
 
     def _model(self):
         model = Sequential()  # This allows us to specify the network layers in a sequential manner
-        model.add(InputLayer(batch_input_shape=(1, 2 + self.observation_size)))
-        model.add(Dense(units=64, input_dim=(1, 2 + self.observation_size), activation='relu'))
+        model.add(InputLayer(batch_input_shape=(1, self.observation_size)))
+        model.add(Dense(units=64, input_dim=(1, self.observation_size), activation='relu'))
         model.add(Dropout(0.4))
         model.add(Dense(units=32, activation='relu'))
         model.add(Dense(units=8, activation='relu'))
@@ -60,23 +60,16 @@ class DeepLearningModel:
             tensor[0][i] = sigmoid(tensor[0][i])
         return tensor
 
-    #  Currently the observations are (2, 5) shaped arrays, but we only use the second column.
-    #  This function returns the desired (1, 5) tensor with normalized values..
+    # Converting shape (observation_size) into (1, observation_size)
     def get_input_tensor(self, observation):
-        input_tensor = np.reshape(observation[:, 1], (1, self.observation_size))
-        input_tensor = self.normalize(input_tensor)
-        result_tensor = np.zeros((1, self.observation_size + 2))
-        result_tensor[0, 2:] = input_tensor
-        return result_tensor
+        return np.array([observation])
 
     def learn(self, total_timesteps):
         for episode in range(total_timesteps):
             print('Episode: ' + str(episode))
 
-            observation, balance, shares = self.env.reset()
+            observation = self.env.reset()
             observation = self.get_input_tensor(observation)
-            observation[0][0] = balance
-            observation[0][1] = shares
 
             done = False
 
@@ -91,8 +84,6 @@ class DeepLearningModel:
                 self.epsilon *= self.epsilon_decay
                 new_observation, reward, done, info = self.env.step(action)
                 new_observation = self.get_input_tensor(new_observation)
-                new_observation[0][0] = info['balance']
-                new_observation[0][1] = info['shares']
 
                 target = reward
                 if not done:
