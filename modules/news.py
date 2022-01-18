@@ -71,5 +71,5 @@ class News():
 
 
 if __name__ == '__main__':
-    news = News("MDRN")
+    news = News("PATH")
     news.saveNews()

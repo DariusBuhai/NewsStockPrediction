@@ -1,5 +1,6 @@
 import numpy as np
 from modules.trading_environment import TradingEnv, Actions
+from modules.wordprocessing import WordProcessing
 
 
 class StocksNewsEnv(TradingEnv):
@@ -8,13 +9,14 @@ class StocksNewsEnv(TradingEnv):
         assert len(frame_bound) == 2
 
         self.frame_bound = frame_bound
-        super().__init__(stocks_df=stocks_df, news_df=news_df, bao=bao, window_size=window_size, initial_balance=initial_balance)
+        super().__init__(stocks_df=stocks_df, news_df=news_df, bao=bao, window_size=window_size,
+                         initial_balance=initial_balance)
 
         self.trade_fee_bid_percent = 0.01
         self.trade_fee_ask_percent = 0.005
 
     # TODO: Adapt and modify features
-    # Current features: (31) -> [price - size(1), bag of words - size(30)]
+    # Current features: (36) -> [price - size(5), bag of words - size(30), sentimental analysis = size(2)]
     def _process_data(self):
         # Prices
         prices = self.stocks_df.loc[:, 'Close'].to_numpy()
@@ -22,12 +24,13 @@ class StocksNewsEnv(TradingEnv):
 
         # Calculate price features for each trade day
         price_features = []
-        for price in prices:
-            price_features.append([price])
+        for idx in range(self.frame_bound[1] - self.window_size):
+            price_features.append(prices[idx:idx + self.window_size])
         price_features = np.array(price_features)
 
         # Articles for each day
-        trade_days = [x.strftime("%Y-%m-%d") for x in list(self.stocks_df.loc[:, 'Date'][self.frame_bound[0] - self.window_size:self.frame_bound[1]])]
+        trade_days = [x.strftime("%Y-%m-%d") for x in
+                      list(self.stocks_df.loc[:, 'Date'][self.frame_bound[0]:self.frame_bound[1]])]
         articles = []
         for trade_day in trade_days:
             if trade_day in self.news_df.keys():
@@ -35,17 +38,14 @@ class StocksNewsEnv(TradingEnv):
             else:
                 articles.append([])
         article_features = []
-        words_usages = dict()
-        for day in articles:
-            for word in self.bao:
-                words_usages[word] = 0
-            for article in day:
-                for word in article['content'].split():
-                    if word in words_usages.keys():
-                        words_usages[word] += 1
-            article_features.append(list(words_usages.values()))
-        article_features = np.array(article_features)
 
+        for day in articles:
+            words_usages, sentimental_analysis = np.zeros(30), np.zeros(2)
+            for article in day:
+                words_usages = np.add(words_usages, WordProcessing.getWordsUsages(self.bao, article))
+                sentimental_analysis = np.add(sentimental_analysis, WordProcessing.getSentimentalAnalysis(article))
+            article_features.append(np.concatenate((words_usages, sentimental_analysis)))
+        article_features = np.array(article_features)
         # Concatenate features
         features = np.concatenate((price_features, article_features), axis=1)
 
