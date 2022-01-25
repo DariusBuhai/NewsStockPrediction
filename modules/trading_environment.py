@@ -4,6 +4,7 @@ from gym.utils import seeding
 import numpy as np
 from enum import Enum
 import matplotlib.pyplot as plt
+from collections import deque
 
 
 class Actions(Enum):
@@ -14,7 +15,7 @@ class Actions(Enum):
 class TradingEnv(gym.Env):
     metadata = {'render.modes': ['human']}
 
-    def __init__(self, stocks_df, news_df, bao, window_size, initial_balance=100):
+    def __init__(self, stocks_df, news_df, bao, window_size, initial_balance=1000):
         assert stocks_df.ndim == 2
 
         self.seed()
@@ -36,13 +37,14 @@ class TradingEnv(gym.Env):
         self._current_tick = None
         self._last_trade_tick = None
         self._position = None
-        self._profit_history = None
+        self._profit_history = (self.window_size * [0]) + [0]
         self._total_reward = 0
         self._total_profit = 0
         self._first_rendering = None
         self.history = None
 
         self._balance = initial_balance
+        self._last_shares = 0
         self._last_balance = initial_balance
         self._initial_balance = initial_balance
         self._shares = 0
@@ -55,10 +57,15 @@ class TradingEnv(gym.Env):
         self._done = False
         self._current_tick = self._start_tick
         self._last_trade_tick = self._current_tick - 1
+        self._position = None
         self._profit_history = (self.window_size * [0]) + [0]
         self._total_reward = 0.
-        self._total_profit = 1.  # unit
+        self._total_profit = 1  # unit
         self._first_rendering = True
+
+        self._balance = self._initial_balance
+        self._last_balance = self._initial_balance
+        self._shares = 0
         self.history = {}
         return self._get_observation()
 
@@ -69,9 +76,11 @@ class TradingEnv(gym.Env):
         if self._current_tick == self._end_tick or (self._balance == 0 and self._shares == 0):
             self._done = True
 
-        self._update_profit(action)
+        #  Important: Intai reward, apoi update profit
         step_reward = self._calculate_reward(action)
         self._total_reward += step_reward
+        self._update_profit(action)
+
 
         self._profit_history.append(self._total_profit)
         observation = self._get_observation()
