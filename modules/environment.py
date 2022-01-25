@@ -1,11 +1,12 @@
 import numpy as np
 from modules.trading_environment import TradingEnv, Actions
 from modules.wordprocessing import WordProcessing
+from collections import deque
 
 
 class StocksNewsEnv(TradingEnv):
 
-    def __init__(self, stocks_df, news_df, bao, window_size, frame_bound, initial_balance=100):
+    def __init__(self, stocks_df, news_df, bao, window_size, frame_bound, initial_balance=1000):
         assert len(frame_bound) == 2
 
         self.frame_bound = frame_bound
@@ -23,9 +24,10 @@ class StocksNewsEnv(TradingEnv):
         prices = prices[self.frame_bound[0] - self.window_size:self.frame_bound[1]]
 
         # Calculate price features for each trade day
+        # ATENTIE: price_features stocheaza diferentele de preturi dintre zilele consecutive
         price_features = []
         for idx in range(self.frame_bound[1] - self.window_size):
-            price_features.append(prices[idx:idx + self.window_size])
+            price_features.append(prices[idx + 1:idx + self.window_size] - prices[idx:idx + self.window_size - 1])
         price_features = np.array(price_features)
 
         # Articles for each day
@@ -49,29 +51,54 @@ class StocksNewsEnv(TradingEnv):
         # Concatenate features
         features = np.concatenate((price_features, article_features), axis=1)
 
-        return prices, features
+        #  Returnam price_features in loc de features - momentan modelul nu reuseste sa invete cu
+        #  toate feature-urile.
+        return prices, price_features
 
     def _calculate_reward(self, action):
-        if action == Actions.Sell.value:
-            return self._balance - self._last_balance
-        else:
+        if self._current_tick == self._end_tick:
             return 0
 
-    def _update_profit(self, action):
-
         current_price = self.prices[self._current_tick]
-        current_share = min(1, self._balance * (1 - self.trade_fee_ask_percent) / current_price)
+        next_price = self.prices[self._current_tick + 1]
+
+        #  Recompensam pozitiv/negativ agentul in functie de actiunea pe care o alege
+        #  si de pretul stockului la momentul de timp urmator.
+        #  ex: daca agentul decide sa vanda share-uri, iar in ziua urmatoare pretul share-urilor
+        #      creste, atunci recompensa va fi -1. Daca in ziua urmatoare pretul scade, atunci
+        #      recompensa va fi 1.
+        #  Am observat ca aceste valori (-1, +1) se comporta bine in invatarea modelului.
+        #  Am incercat si valori mai mici, si valori mai mari, iar modelul ajungea sa nu mai invete.
+        if action == Actions.Buy.value:
+            if next_price > current_price:
+                return 1
+            else:
+                return -1
+        else:
+            if next_price > current_price:
+                return -1
+            else:
+                return 1
+
+    def _update_profit(self, action):
+        current_price = self.prices[self._current_tick]
 
         # Update balance and shares
         if action == Actions.Buy.value:
-            self._last_balance = self._balance
-            self._balance -= current_price * current_share
-            self._shares += current_share
+            shares_to_buy = min(2, self._balance * (1 - self.trade_fee_ask_percent) / current_price)
+            if shares_to_buy == 2:
+                self._last_balance = self._balance
+                self._balance -= current_price * shares_to_buy
+                self._shares += shares_to_buy
         if action == Actions.Sell.value:
-            self._balance += current_price * self._shares
-            self._shares = 0
+            shares_to_sell = min(2, self._shares)
+            if shares_to_sell != 0:
+                self._last_balance = self._balance
+                self._balance += current_price * shares_to_sell
+                self._shares -= shares_to_sell
 
         self._total_profit = (self._balance + self._shares * current_price) - self._initial_balance
+
 
     def max_possible_profit(self):
         current_tick = self._start_tick

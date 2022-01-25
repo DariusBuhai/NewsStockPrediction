@@ -1,4 +1,5 @@
 from cube.api import Cube
+from typing import List
 
 from modules.news import News
 
@@ -36,7 +37,7 @@ class WordProcessing(News):
         return [x[0] for x in words_used[:limit]]
 
     @staticmethod
-    def getWordsUsages(bao: list[str], article):
+    def getWordsUsages(bao: List[str], article):
         words_usages = dict()
         for word in bao:
             words_usages[word] = 0
@@ -63,6 +64,7 @@ class WordProcessing(News):
             negative_words = nw.read().split()
             for word in negative_words:
                 negative_words_set.add(word)
+
         positive_score, negative_score = 0, 0
 
         def getSentimentalScore(text, positive_score, negative_score):

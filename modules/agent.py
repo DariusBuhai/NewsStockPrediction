@@ -16,12 +16,13 @@ class Agent(WordProcessing):
         self.df = pd.read_csv(f'{self.STOCKS_PATH}{stock}.csv')
         self.df['Date'] = pd.to_datetime(self.df['Date'])
         self.df.sort_values('Date')
-        self.env = StocksNewsEnv(stocks_df=self.df, news_df=self.news_per_days, bao=self.bao, frame_bound=(5, 250), window_size=5)
+        self.env = StocksNewsEnv(stocks_df=self.df, news_df=self.news_per_days, bao=self.bao, frame_bound=(5, 250),
+                                 window_size=5)
         self.model = DeepLearningModel(self.env)
-        try:
-            self.model.load_best()
-        except Exception as e:
-            print(f"Cannot load model, Error {e}")
+        # try:
+        #     self.model.load_best()
+        # except Exception as e:
+        #     print(f"Cannot load model, Error {e}")
 
     def test(self):
         self.env.action_spacestate = self.env.reset()
@@ -36,21 +37,16 @@ class Agent(WordProcessing):
     def show(self):
         plt.figure(figsize=(15, 6))
         plt.cla()
-        self.env.render_all()
+        self.model.env.render_all()
         plt.show()
 
-    def train(self, verbose=1, steps=100000):
+    def train(self, verbose=1, steps=100):
         self.model.verbose = verbose
         self.model.learn(total_timesteps=steps)
 
     def evaluate(self):
-        self.env = StocksNewsEnv(stocks_df=self.df, news_df=self.news_per_days, bao=self.bao, frame_bound=(5, 250), window_size=5)
+        self.env = StocksNewsEnv(stocks_df=self.df, news_df=self.news_per_days, bao=self.bao, frame_bound=(5, 250),
+                                 window_size=5)
         self.model.update_env(self.env)
-        obs = self.env.reset()
-        while True:
-            obs_fixed = self.model.get_input_tensor(obs)
-            action = self.model.predict(obs_fixed)
-            obs, rewards, done, info = self.env.step(action)
-            if done:
-                print("info", info)
-                break
+        print('Evaluare noua')
+        self.model.evaluate()
