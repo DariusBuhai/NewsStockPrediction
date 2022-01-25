@@ -17,6 +17,8 @@ class WordProcessing(News):
                          "are", "has", "chars]", "that", "from", "with", "have", "its", "was", "(Reuters)"]
         bao = dict()
         for day in self.news_per_days.keys():
+            if "articles" not in self.news_per_days[day]:
+                continue
             for article in self.news_per_days[day]['articles']:
                 if 'content' in article:
                     for word in article['content'].split():

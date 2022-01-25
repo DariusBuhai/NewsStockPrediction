@@ -23,6 +23,7 @@ def sigmoid(x):
     return 1 / (1 + math.exp(-x))
 
 #  Functia de loss este luata de aici: https://github.com/pskrunner14/trading-bot/blob/master/trading_bot/agent.py
+#  Functia de loss este luata de aici: https://github.com/pskrunner14/trading-bot/blob/master/trading_bot/agent.py
 def huber_loss(y_true, y_pred, clip_delta=1.0):
     """Huber loss - Custom Loss Function for Q Learning
     Links: 	https://en.wikipedia.org/wiki/Huber_loss

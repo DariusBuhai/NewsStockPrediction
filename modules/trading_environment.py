@@ -37,7 +37,8 @@ class TradingEnv(gym.Env):
         self._current_tick = None
         self._last_trade_tick = None
         self._position = None
-        self._profit_history = (self.window_size * [0]) + [0]
+        self._action_history = (self.window_size * [0]) + [0]
+        self._balance_history = (self.window_size * [0]) + [0]
         self._total_reward = 0
         self._total_profit = 0
         self._first_rendering = None
@@ -58,7 +59,7 @@ class TradingEnv(gym.Env):
         self._current_tick = self._start_tick
         self._last_trade_tick = self._current_tick - 1
         self._position = None
-        self._profit_history = (self.window_size * [0]) + [0]
+        self._balance_history = (self.window_size * [0]) + [0]
         self._total_reward = 0.
         self._total_profit = 1  # unit
         self._first_rendering = True
@@ -77,18 +78,21 @@ class TradingEnv(gym.Env):
             self._done = True
 
         #  Important: Intai reward, apoi update profit
+        final_action = self._update_profit(action)
         step_reward = self._calculate_reward(action)
         self._total_reward += step_reward
-        self._update_profit(action)
 
+        self._balance_history.append(self._balance + self._shares * self.prices[self._current_tick])
+        self._action_history.append(final_action)
 
-        self._profit_history.append(self._total_profit)
         observation = self._get_observation()
         info = dict(
             total_reward=self._total_reward,
             total_profit=self._total_profit,
             shares=self._shares,
-            balance=self._balance
+            balance=self._balance,
+            initial_value=self._initial_balance,
+            total_value=self._shares*self.prices[self._current_tick] + self._balance
         )
         self._update_history(info)
 
@@ -119,7 +123,7 @@ class TradingEnv(gym.Env):
             self._first_rendering = False
             plt.cla()
             plt.plot(self.prices)
-            start_position = self._profit_history[self._start_tick]
+            start_position = self._balance_history[self._start_tick]
             _plot_position(start_position, self._start_tick)
 
         _plot_position(self._position, self._current_tick)
@@ -131,25 +135,34 @@ class TradingEnv(gym.Env):
 
         plt.pause(0.01)
 
-    def render_all(self, mode='human'):
-        window_ticks = np.arange(len(self._profit_history))
-        plt.plot(self.prices)
+    def render_all(self):
+        offset = self.window_size + 1
 
-        good_ticks = []
-        bad_ticks = []
+        plt.figure(figsize=(15, 6))
+        plt.cla()
+        window_ticks = np.arange(len(self._action_history) - offset)
+        plt.plot(self.prices[offset:])
+
+        buy_ticks = []
+        sell_ticks = []
         for i, tick in enumerate(window_ticks):
-            if self._profit_history[i] > 0:
-                good_ticks.append(tick)
-            elif self._profit_history[i] <= 0:
-                bad_ticks.append(tick)
+            if self._action_history[offset:][i] == 1:
+                buy_ticks.append(tick)
+            elif self._action_history[offset:][i] == 0:
+                sell_ticks.append(tick)
 
-        plt.plot(good_ticks, self.prices[good_ticks], 'go')
-        plt.plot(bad_ticks, self.prices[bad_ticks], 'ro')
+        plt.plot(buy_ticks, self.prices[offset:][buy_ticks], 'go')
+        plt.plot(sell_ticks, self.prices[offset:][sell_ticks], 'ro')
 
         plt.suptitle(
             "Total Reward: %.6f" % self._total_reward + ' ~ ' +
             "Total Profit: %.6f" % self._total_profit
         )
+        plt.show()
+        plt.figure(figsize=(15, 6))
+        plt.cla()
+        plt.plot(self._balance_history[offset:])
+        plt.show()
 
     def close(self):
         plt.close()

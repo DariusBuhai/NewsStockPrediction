@@ -82,6 +82,7 @@ class StocksNewsEnv(TradingEnv):
 
     def _update_profit(self, action):
         current_price = self.prices[self._current_tick]
+        final_action = -1
 
         # Update balance and shares
         if action == Actions.Buy.value:
@@ -90,15 +91,17 @@ class StocksNewsEnv(TradingEnv):
                 self._last_balance = self._balance
                 self._balance -= current_price * shares_to_buy
                 self._shares += shares_to_buy
+                final_action = 1
         if action == Actions.Sell.value:
             shares_to_sell = min(2, self._shares)
             if shares_to_sell != 0:
                 self._last_balance = self._balance
                 self._balance += current_price * shares_to_sell
                 self._shares -= shares_to_sell
+                final_action = 0
 
         self._total_profit = (self._balance + self._shares * current_price) - self._initial_balance
-
+        return final_action
 
     def max_possible_profit(self):
         current_tick = self._start_tick

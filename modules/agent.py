@@ -35,10 +35,8 @@ class Agent(WordProcessing):
         self.show()
 
     def show(self):
-        plt.figure(figsize=(15, 6))
-        plt.cla()
+
         self.model.env.render_all()
-        plt.show()
 
     def train(self, verbose=1, steps=100):
         self.model.verbose = verbose
