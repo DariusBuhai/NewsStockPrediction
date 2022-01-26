@@ -4,12 +4,12 @@ from gym.utils import seeding
 import numpy as np
 from enum import Enum
 import matplotlib.pyplot as plt
-from collections import deque
 
 
 class Actions(Enum):
     Sell = 0
     Buy = 1
+    Hold = 2
 
 
 class TradingEnv(gym.Env):
@@ -48,6 +48,7 @@ class TradingEnv(gym.Env):
         self._last_shares = 0
         self._last_balance = initial_balance
         self._initial_balance = initial_balance
+        self._max_buy = 100
         self._shares = 0
 
     def seed(self, seed=None):
@@ -77,13 +78,12 @@ class TradingEnv(gym.Env):
         if self._current_tick == self._end_tick or (self._balance == 0 and self._shares == 0):
             self._done = True
 
-        #  Important: Intai reward, apoi update profit
-        final_action = self._update_profit(action)
-        step_reward = self._calculate_reward(action)
+        actual_action = self._update_profit(action)
+        step_reward = self._calculate_reward(action, actual_action)
         self._total_reward += step_reward
 
         self._balance_history.append(self._balance + self._shares * self.prices[self._current_tick])
-        self._action_history.append(final_action)
+        self._action_history.append(actual_action)
 
         observation = self._get_observation()
         info = dict(
@@ -99,7 +99,9 @@ class TradingEnv(gym.Env):
         return observation, step_reward, self._done, info
 
     def _get_observation(self):
-        return self.signal_features[self._current_tick]
+        observation = self.signal_features[self._current_tick]
+        # additional_info = np.array([self._balance, self._shares])
+        return observation
 
     def _update_history(self, info):
         if not self.history:
@@ -143,16 +145,18 @@ class TradingEnv(gym.Env):
         window_ticks = np.arange(len(self._action_history) - offset)
         plt.plot(self.prices[offset:])
 
-        buy_ticks = []
-        sell_ticks = []
+        buy_ticks, sell_ticks, hold_ticks = [], [], []
         for i, tick in enumerate(window_ticks):
-            if self._action_history[offset:][i] == 1:
+            if self._action_history[offset:][i] == Actions.Buy.value:
                 buy_ticks.append(tick)
-            elif self._action_history[offset:][i] == 0:
+            elif self._action_history[offset:][i] == Actions.Sell.value:
                 sell_ticks.append(tick)
+            elif self._action_history[offset:][i] == Actions.Hold.value:
+                hold_ticks.append(tick)
 
         plt.plot(buy_ticks, self.prices[offset:][buy_ticks], 'go')
         plt.plot(sell_ticks, self.prices[offset:][sell_ticks], 'ro')
+        plt.plot(hold_ticks, self.prices[offset:][hold_ticks], 'bo')
 
         plt.suptitle(
             "Total Reward: %.6f" % self._total_reward + ' ~ ' +
@@ -176,7 +180,7 @@ class TradingEnv(gym.Env):
     def _process_data(self):
         raise NotImplementedError
 
-    def _calculate_reward(self, action):
+    def _calculate_reward(self, action, actual_action):
         raise NotImplementedError
 
     def _update_profit(self, action):

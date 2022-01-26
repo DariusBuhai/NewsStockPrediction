@@ -22,7 +22,7 @@ def sigmoid(x):
         return 1 - 1 / (1 + math.exp(x))
     return 1 / (1 + math.exp(-x))
 
-#  Functia de loss este luata de aici: https://github.com/pskrunner14/trading-bot/blob/master/trading_bot/agent.py
+
 #  Functia de loss este luata de aici: https://github.com/pskrunner14/trading-bot/blob/master/trading_bot/agent.py
 def huber_loss(y_true, y_pred, clip_delta=1.0):
     """Huber loss - Custom Loss Function for Q Learning
@@ -43,26 +43,33 @@ class DeepLearningModel:
         #  Same initializations as in our previous agent.
         self.env = env
 
-        self.action_size = 2  # Sell, Buy
-        self.state_size = 2  # Short, Long
+        self.action_size = 3  # Sell, Buy, Hold
         self.observation_size = self.env.observation_space
         self.memory = deque(maxlen=1000)
         #  We'll have to finetune the ones below and see which ones give the best results.
         self.gamma = 0.95
         self.epsilon = 1.0
-        self.epsilon_min = 0.02
-        self.epsilon_decay = 0.995
+        self.epsilon_min = 0.2
+        self.epsilon_decay = 0.999
         self.model = self._model()
         self.memory = deque(maxlen=50000)
         self.memory_y = deque(maxlen=50000)
         self.batch_size = 24
 
-        self.model_checkpoint = ModelCheckpoint(self.BEST_MODEL, save_best_only=False, verbose=0)
+        self.best_profit = 0
+
+        # self.model_checkpoint = ModelCheckpoint(self.BEST_MODEL, save_best_only=False, verbose=0)
 
     def load_best(self):
-        if path.isfile(self.BEST_MODEL):
-            self.model = load_model(self.BEST_MODEL)
-            print('Am incarcat modelul salvat anterior!')
+        try:
+            if path.isfile(self.BEST_MODEL):
+                self.model = load_model(self.BEST_MODEL)
+                print('Am incarcat modelul salvat anterior!')
+        except:
+            pass
+
+    def save_model(self):
+        self.model.save(self.BEST_MODEL)
 
     def update_env(self, env_new: StocksNewsEnv):
         self.env = env_new
@@ -105,7 +112,6 @@ class DeepLearningModel:
             num_model_decisions = 0
 
             while not done:
-                action = 0
                 if self.epsilon > np.random.random():
                     #  Let the agent explore by selecting a random action
                     action = np.random.randint(0, self.action_size)
@@ -114,8 +120,6 @@ class DeepLearningModel:
                     action = self.predict(np.array([observation]))
                     print(action, end="")
                     num_model_decisions += 1
-
-
 
                 new_observation, reward, done, info = self.env.step(action)
                 new_observation = self.get_input_tensor(new_observation)
@@ -143,7 +147,7 @@ class DeepLearningModel:
                         y_train,
                         epochs=1,
                         verbose=0,
-                        callbacks=[self.model_checkpoint],
+                        # callbacks=[self.model_checkpoint],
                         workers=8
                     )
 
@@ -153,8 +157,13 @@ class DeepLearningModel:
 
                 observation = new_observation
             print()
-            print('Decizii luate de model: ' + str(num_model_decisions))
-            self.evaluate(episode=episode)
+            print(f"Epsilon: {self.epsilon}")
+            print(f'Decizii luate de model: {num_model_decisions}')
+            total_profit = self.evaluate(episode=episode)
+            if total_profit > self.best_profit:
+                self.save_model()
+                self.best_profit = total_profit
+                print("Model salvat")
             print()
 
     #  Returns the predicted action based on given observation.
@@ -177,6 +186,6 @@ class DeepLearningModel:
             if done:
                 print()
                 print("info", info)
-
-                if episode is not None:
-                    self.model.save('data/models/episode_%d' % episode)
+                return info['total_profit']
+                # if episode is not None:
+                #     self.model.save('data/models/episode_%d' % episode)

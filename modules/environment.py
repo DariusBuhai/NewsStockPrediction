@@ -24,11 +24,17 @@ class StocksNewsEnv(TradingEnv):
         prices = prices[self.frame_bound[0] - self.window_size:self.frame_bound[1]]
 
         # Calculate price features for each trade day
-        # ATENTIE: price_features stocheaza diferentele de preturi dintre zilele consecutive
         price_features = []
         for idx in range(self.frame_bound[1] - self.window_size):
-            price_features.append(prices[idx + 1:idx + self.window_size] - prices[idx:idx + self.window_size - 1])
+            # price_features.append(prices[idx:idx + self.window_size])
+            price_features.append([prices[idx]])
         price_features = np.array(price_features)
+
+        # ATENTIE: price_features stocheaza diferentele de preturi dintre zilele consecutive
+        price_changes = []
+        for idx in range(self.frame_bound[1] - self.window_size):
+            price_changes.append(prices[idx + 1:idx + self.window_size] - prices[idx:idx + self.window_size - 1])
+        price_changes = np.array(price_changes)
 
         # Articles for each day
         trade_days = [x.strftime("%Y-%m-%d") for x in
@@ -49,56 +55,49 @@ class StocksNewsEnv(TradingEnv):
             article_features.append(np.concatenate((words_usages, sentimental_analysis)))
         article_features = np.array(article_features)
         # Concatenate features
-        features = np.concatenate((price_features, article_features), axis=1)
-
+        features = np.concatenate((price_changes, price_features), axis=1)
+        # features = np.concatenate((features, article_features), axis=1)
         #  Returnam price_features in loc de features - momentan modelul nu reuseste sa invete cu
         #  toate feature-urile.
-        return prices, price_features
+        return prices, features
 
-    def _calculate_reward(self, action):
+    def _calculate_reward(self, action, actual_action):
         if self._current_tick == self._end_tick:
             return 0
 
+        next_day_price = self.prices[self._current_tick+1]
         current_price = self.prices[self._current_tick]
-        next_price = self.prices[self._current_tick + 1]
+        current_portfolio = current_price * self._shares + self._balance
+        next_day_portfolio = next_day_price * self._shares + self._balance
 
-        #  Recompensam pozitiv/negativ agentul in functie de actiunea pe care o alege
-        #  si de pretul stockului la momentul de timp urmator.
-        #  ex: daca agentul decide sa vanda share-uri, iar in ziua urmatoare pretul share-urilor
-        #      creste, atunci recompensa va fi -1. Daca in ziua urmatoare pretul scade, atunci
-        #      recompensa va fi 1.
-        #  Am observat ca aceste valori (-1, +1) se comporta bine in invatarea modelului.
-        #  Am incercat si valori mai mici, si valori mai mari, iar modelul ajungea sa nu mai invete.
-        if action == Actions.Buy.value:
-            if next_price > current_price:
+        if action == Actions.Buy.value or action == Actions.Hold.value:
+            if next_day_portfolio > current_portfolio:
                 return 1
-            else:
-                return -1
-        else:
-            if next_price > current_price:
-                return -1
-            else:
+            return -1
+        if action == Actions.Sell.value:
+            if next_day_portfolio < current_portfolio:
                 return 1
+            return -1
 
     def _update_profit(self, action):
         current_price = self.prices[self._current_tick]
-        final_action = -1
 
         # Update balance and shares
+        final_action = Actions.Hold.value
         if action == Actions.Buy.value:
-            shares_to_buy = min(2, self._balance * (1 - self.trade_fee_ask_percent) / current_price)
-            if shares_to_buy == 2:
+            shares_to_buy = min(self._max_buy, self._balance) * (1 - self.trade_fee_ask_percent) / current_price
+            if shares_to_buy > 0:
                 self._last_balance = self._balance
                 self._balance -= current_price * shares_to_buy
                 self._shares += shares_to_buy
-                final_action = 1
+                final_action = Actions.Buy.value
         if action == Actions.Sell.value:
-            shares_to_sell = min(2, self._shares)
+            shares_to_sell = self._shares
             if shares_to_sell != 0:
                 self._last_balance = self._balance
                 self._balance += current_price * shares_to_sell
                 self._shares -= shares_to_sell
-                final_action = 0
+                final_action = Actions.Sell.value
 
         self._total_profit = (self._balance + self._shares * current_price) - self._initial_balance
         return final_action

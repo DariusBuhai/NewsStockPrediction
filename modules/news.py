@@ -9,7 +9,7 @@ NEWS_API_KEY = "2fdb18e9297a437ab91a7ec7669bed35"
 NEWS_SOURCES = ""
 
 
-class News():
+class News:
 
     NEWS_PATH = "data/news/"
 
