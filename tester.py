@@ -5,9 +5,9 @@ import os
 
 if __name__ == "__main__":
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
-    agent = Agent("PFE")
+    agent = Agent("VOO")
 
-    # agent.train(steps=10)
-    agent.model.model = keras.models.load_model('data/models/best_model.h5')
-    agent.evaluate()
-    agent.show()
+    for _ in range(10):
+        agent.model.load_best()
+        agent.train(steps=100)
+        agent.show()

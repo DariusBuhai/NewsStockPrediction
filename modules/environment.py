@@ -25,16 +25,15 @@ class StocksNewsEnv(TradingEnv):
 
         # Calculate price features for each trade day
         price_features = []
-        for idx in range(self.frame_bound[1] - self.window_size):
-            # price_features.append(prices[idx:idx + self.window_size])
-            price_features.append([prices[idx]])
-        price_features = np.array(price_features)
+        for idx in range(self.frame_bound[0], self.frame_bound[1]):
+            price_current = round(prices[idx], 4)
+            price_last_day = round(prices[idx-1], 4)
+            price_before_window = round(prices[idx-self.window_size], 4)
+            diff_percentage_window = round(1 - (price_current / price_before_window), 6)
+            diff_percentage_day = round(1 - (price_current / price_last_day), 6)
+            price_features.append([diff_percentage_window, diff_percentage_day])
 
-        # ATENTIE: price_features stocheaza diferentele de preturi dintre zilele consecutive
-        price_changes = []
-        for idx in range(self.frame_bound[1] - self.window_size):
-            price_changes.append(prices[idx + 1:idx + self.window_size] - prices[idx:idx + self.window_size - 1])
-        price_changes = np.array(price_changes)
+        price_features = np.array(price_features)
 
         # Articles for each day
         trade_days = [x.strftime("%Y-%m-%d") for x in
@@ -55,8 +54,7 @@ class StocksNewsEnv(TradingEnv):
             article_features.append(np.concatenate((words_usages, sentimental_analysis)))
         article_features = np.array(article_features)
         # Concatenate features
-        features = np.concatenate((price_changes, price_features), axis=1)
-        # features = np.concatenate((features, article_features), axis=1)
+        features = price_features
         #  Returnam price_features in loc de features - momentan modelul nu reuseste sa invete cu
         #  toate feature-urile.
         return prices, features
@@ -67,17 +65,13 @@ class StocksNewsEnv(TradingEnv):
 
         next_day_price = self.prices[self._current_tick+1]
         current_price = self.prices[self._current_tick]
-        current_portfolio = current_price * self._shares + self._balance
-        next_day_portfolio = next_day_price * self._shares + self._balance
+
+        diff = 1 - (current_price / next_day_price)
 
         if action == Actions.Buy.value or action == Actions.Hold.value:
-            if next_day_portfolio > current_portfolio:
-                return 1
-            return -1
+            return diff
         if action == Actions.Sell.value:
-            if next_day_portfolio < current_portfolio:
-                return 1
-            return -1
+            return -diff
 
     def _update_profit(self, action):
         current_price = self.prices[self._current_tick]

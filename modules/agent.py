@@ -16,7 +16,7 @@ class Agent(WordProcessing):
         self.df = pd.read_csv(f'{self.STOCKS_PATH}{stock}.csv')
         self.df['Date'] = pd.to_datetime(self.df['Date'])
         self.df.sort_values('Date')
-        self.env = StocksNewsEnv(stocks_df=self.df, news_df=self.news_per_days, bao=self.bao, frame_bound=(5, 250),
+        self.env = StocksNewsEnv(stocks_df=self.df, news_df=self.news_per_days, bao=self.bao, frame_bound=(5, 1255),
                                  window_size=5)
         self.model = DeepLearningModel(self.env)
         # try:
@@ -43,7 +43,7 @@ class Agent(WordProcessing):
         self.model.learn(total_timesteps=steps)
 
     def evaluate(self):
-        self.env = StocksNewsEnv(stocks_df=self.df, news_df=self.news_per_days, bao=self.bao, frame_bound=(5, 250),
+        self.env = StocksNewsEnv(stocks_df=self.df, news_df=self.news_per_days, bao=self.bao, frame_bound=(5, 1255),
                                  window_size=5)
         self.model.update_env(self.env)
         print('Evaluare noua')

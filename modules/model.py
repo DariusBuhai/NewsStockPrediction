@@ -1,12 +1,9 @@
-from collections import deque
 import math
 from os import path
 import numpy as np
 from keras.models import Sequential, load_model
-from keras.layers import Dense, InputLayer, Dropout, LSTM
-from keras.callbacks import ModelCheckpoint
+from keras.layers import Dense
 import keras.backend as K
-import tensorflow as tf
 from tensorflow import keras
 from collections import deque
 import random
@@ -50,7 +47,7 @@ class DeepLearningModel:
         self.gamma = 0.95
         self.epsilon = 1.0
         self.epsilon_min = 0.2
-        self.epsilon_decay = 0.999
+        self.epsilon_decay = 0.9999
         self.model = self._model()
         self.memory = deque(maxlen=50000)
         self.memory_y = deque(maxlen=50000)
@@ -60,11 +57,13 @@ class DeepLearningModel:
 
         # self.model_checkpoint = ModelCheckpoint(self.BEST_MODEL, save_best_only=False, verbose=0)
 
-    def load_best(self):
+    def load_best(self, also_eval=True):
         try:
             if path.isfile(self.BEST_MODEL):
-                self.model = load_model(self.BEST_MODEL)
                 print('Am incarcat modelul salvat anterior!')
+                self.model = load_model(self.BEST_MODEL)
+                if also_eval:
+                    self.best_profit = self.evaluate()
         except:
             pass
 
@@ -77,12 +76,12 @@ class DeepLearningModel:
     def _model(self):
         model = Sequential()  # This allows us to specify the network layers in a sequential manner
         model.add(Dense(units=128, activation="relu", input_dim=self.observation_size))
-        model.add(Dense(units=256, activation="relu"))
+        # model.add(Dense(units=256, activation="relu"))
         model.add(Dense(units=256, activation="relu"))
         model.add(Dense(units=128, activation="relu"))
         model.add(Dense(units=self.action_size))
 
-        opt = keras.optimizers.Adam(learning_rate=0.001)
+        opt = keras.optimizers.Adam(learning_rate=0.0001)
         model.compile(loss=huber_loss, optimizer=opt, metrics=['mae', 'accuracy'])
         return model
 
@@ -90,9 +89,9 @@ class DeepLearningModel:
     def normalize(self, tensor):
         #  TODO: de vazut daca sunt transformari care merita aplicate
         #  sigmoid() nu se comporta bine in cazul nostru si reteaua nu invata nimic daca o aplicam
-        #  for i in range(self.observation_size):
-        #    tensor[i] = sigmoid(tensor[i])
-        #   tensor = keras.utils.normalize(tensor)
+        # for i in range(self.observation_size):
+        #     tensor[i] = sigmoid(tensor[i])
+        #     tensor = keras.utils.normalize(tensor)
         return tensor
 
     # Converting shape (observation_size) into (1, observation_size)
@@ -159,7 +158,7 @@ class DeepLearningModel:
             print()
             print(f"Epsilon: {self.epsilon}")
             print(f'Decizii luate de model: {num_model_decisions}')
-            total_profit = self.evaluate(episode=episode)
+            total_profit = self.evaluate()
             if total_profit > self.best_profit:
                 self.save_model()
                 self.best_profit = total_profit
@@ -170,8 +169,8 @@ class DeepLearningModel:
     def predict(self, observations):
         return np.argmax(self.model.predict(observations)[0])
 
-    def evaluate(self, episode=None):
-        print('Evaluare:')
+    def evaluate(self):
+        print('Evaluare Model:')
 
         observation = self.env.reset()
         observation = self.get_input_tensor(observation)
@@ -187,5 +186,3 @@ class DeepLearningModel:
                 print()
                 print("info", info)
                 return info['total_profit']
-                # if episode is not None:
-                #     self.model.save('data/models/episode_%d' % episode)
