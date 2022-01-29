@@ -1,6 +1,7 @@
 import math
 from os import path
 import numpy as np
+from keras.callbacks import ModelCheckpoint
 from keras.models import Sequential, load_model
 from keras.layers import Dense
 import keras.backend as K
@@ -35,19 +36,21 @@ def huber_loss(y_true, y_pred, clip_delta=1.0):
 
 class DeepLearningModel:
     BEST_MODEL = 'data/models/best_model.h5'
+    LAST_MODEL = 'data/models/last_model.h5'
 
     def __init__(self, env: StocksNewsEnv):
         #  Same initializations as in our previous agent.
         self.env = env
 
-        self.action_size = 3  # Sell, Buy, Hold
+        #  Hardcodat!
+        self.action_size = 2  # Sell, Buy  (Hold)
         self.observation_size = self.env.observation_space
         self.memory = deque(maxlen=1000)
         #  We'll have to finetune the ones below and see which ones give the best results.
         self.gamma = 0.95
         self.epsilon = 1.0
-        self.epsilon_min = 0.2
-        self.epsilon_decay = 0.9999
+        self.epsilon_min = 0.1
+        self.epsilon_decay = 0.995
         self.model = self._model()
         self.memory = deque(maxlen=50000)
         self.memory_y = deque(maxlen=50000)
@@ -55,7 +58,7 @@ class DeepLearningModel:
 
         self.best_profit = 0
 
-        # self.model_checkpoint = ModelCheckpoint(self.BEST_MODEL, save_best_only=False, verbose=0)
+        self.model_checkpoint = ModelCheckpoint(self.LAST_MODEL, save_best_only=False, verbose=0)
 
     def load_best(self, also_eval=True):
         try:
@@ -76,12 +79,12 @@ class DeepLearningModel:
     def _model(self):
         model = Sequential()  # This allows us to specify the network layers in a sequential manner
         model.add(Dense(units=128, activation="relu", input_dim=self.observation_size))
-        # model.add(Dense(units=256, activation="relu"))
+        model.add(Dense(units=256, activation="relu"))
         model.add(Dense(units=256, activation="relu"))
         model.add(Dense(units=128, activation="relu"))
         model.add(Dense(units=self.action_size))
 
-        opt = keras.optimizers.Adam(learning_rate=0.0001)
+        opt = keras.optimizers.Adam(learning_rate=0.0002)
         model.compile(loss=huber_loss, optimizer=opt, metrics=['mae', 'accuracy'])
         return model
 
@@ -131,6 +134,7 @@ class DeepLearningModel:
                     target = reward + self.gamma * np.amax(self.model.predict(np.array([new_observation]))[0])
 
                 target_f = self.model.predict(np.array([observation]))
+                print(target_f)
                 target_f[0][action] = target
                 self.memory.append([observation, target_f])
 
@@ -146,7 +150,7 @@ class DeepLearningModel:
                         y_train,
                         epochs=1,
                         verbose=0,
-                        # callbacks=[self.model_checkpoint],
+                        callbacks=[self.model_checkpoint],
                         workers=8
                     )
 
@@ -156,7 +160,7 @@ class DeepLearningModel:
 
                 observation = new_observation
             print()
-            print(f"Epsilon: {self.epsilon}")
+            #print(f"Epsilon: {self.epsilon}")
             print(f'Decizii luate de model: {num_model_decisions}')
             total_profit = self.evaluate()
             if total_profit > self.best_profit:

@@ -23,15 +23,24 @@ class StocksNewsEnv(TradingEnv):
         prices = self.stocks_df.loc[:, 'Close'].to_numpy()
         prices = prices[self.frame_bound[0] - self.window_size:self.frame_bound[1]]
 
-        # Calculate price features for each trade day
         price_features = []
         for idx in range(self.frame_bound[0], self.frame_bound[1]):
-            price_current = round(prices[idx], 4)
-            price_last_day = round(prices[idx-1], 4)
-            price_before_window = round(prices[idx-self.window_size], 4)
-            diff_percentage_window = round(1 - (price_current / price_before_window), 6)
-            diff_percentage_day = round(1 - (price_current / price_last_day), 6)
-            price_features.append([diff_percentage_window, diff_percentage_day])
+            if idx < 2 * self.window_size:
+                #  Not enough data.
+                #  Does not really matter, this happens very few times.
+                price_features.append([0 for _ in range(2 * self.window_size - 1)])
+            else:
+                prices_current = prices[idx - 2 * self.window_size + 1: idx]
+                prices_prev = prices[idx - 2 * self.window_size: idx - 1]
+                diff_prices = prices_current - prices_prev
+                price_features.append(diff_prices)
+
+            # price_current = round(prices[idx], 4)
+            # price_last_day = round(prices[idx-1], 4)
+            # price_before_window = round(prices[idx-self.window_size], 4)
+            # diff_percentage_window = round(1 - (price_current / price_before_window), 6) * 100
+            # diff_percentage_day = round(1 - (price_current / price_last_day), 6) * 100
+            # price_features.append([diff_percentage_window, diff_percentage_day])
 
         price_features = np.array(price_features)
 
@@ -63,15 +72,35 @@ class StocksNewsEnv(TradingEnv):
         if self._current_tick == self._end_tick:
             return 0
 
-        next_day_price = self.prices[self._current_tick+1]
+        next_day_price = self.prices[self._current_tick + 1]
         current_price = self.prices[self._current_tick]
 
-        diff = 1 - (current_price / next_day_price)
+        if action == Actions.Buy.value:
+            if next_day_price > current_price:
+                return 0.6
+            else:
+                return -1
+        elif action == Actions.Sell.value:
+            if next_day_price > current_price:
+                return -1
+            else:
+                return 1
+        else:
+            if self._shares >= 1 and current_price < next_day_price:
+                #  Ar fi fost bine sa vanda
+                return -0.8
+            elif self._balance > current_price + 1 and current_price < next_day_price:
+                #  Ar fi fost bine sa cumpere
+                return -0.2
+            return 1
 
-        if action == Actions.Buy.value or action == Actions.Hold.value:
-            return diff
-        if action == Actions.Sell.value:
-            return -diff
+
+        # diff = 1 - (current_price / next_day_price)
+        #
+        # if action == Actions.Buy.value or action == Actions.Hold.value:
+        #     return diff
+        # if action == Actions.Sell.value:
+        #     return -diff
 
     def _update_profit(self, action):
         current_price = self.prices[self._current_tick]
@@ -80,14 +109,14 @@ class StocksNewsEnv(TradingEnv):
         final_action = Actions.Hold.value
         if action == Actions.Buy.value:
             shares_to_buy = min(self._max_buy, self._balance) * (1 - self.trade_fee_ask_percent) / current_price
-            if shares_to_buy > 0:
+            if shares_to_buy > 0.1:
                 self._last_balance = self._balance
                 self._balance -= current_price * shares_to_buy
                 self._shares += shares_to_buy
                 final_action = Actions.Buy.value
         if action == Actions.Sell.value:
-            shares_to_sell = self._shares
-            if shares_to_sell != 0:
+            shares_to_sell = min(2, self._shares)
+            if shares_to_sell > 0:
                 self._last_balance = self._balance
                 self._balance += current_price * shares_to_sell
                 self._shares -= shares_to_sell

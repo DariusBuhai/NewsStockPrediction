@@ -138,7 +138,8 @@ class TradingEnv(gym.Env):
         plt.pause(0.01)
 
     def render_all(self):
-        offset = self.window_size + 1
+        #offset = self.window_size + 1
+        offset = self.window_size - 1
 
         plt.figure(figsize=(15, 6))
         plt.cla()
