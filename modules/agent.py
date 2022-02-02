@@ -37,7 +37,7 @@ class Agent(WordProcessing):
         self.model.learn(total_timesteps=steps)
 
     def evaluate(self):
-        self.env = StocksNewsEnv(stocks_df=self.df, news_df=self.news_per_days, bao=self.bao, frame_bound=(self.df.shape[0]-self.TRAIN_SIZE, self.df.shape[0]-1),
+        self.env = StocksNewsEnv(stocks_df=self.df, news_df=self.news_per_days, bao=self.bao, frame_bound=(5, self.df.shape[0]-self.TRAIN_SIZE),
                                  window_size=5)
         self.model.update_env(self.env)
         print('Evaluare noua')
