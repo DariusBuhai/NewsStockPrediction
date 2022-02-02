@@ -134,7 +134,7 @@ class DeepLearningModel:
                     target = reward + self.gamma * np.amax(self.model.predict(np.array([new_observation]))[0])
 
                 target_f = self.model.predict(np.array([observation]))
-                print(target_f)
+                # print(target_f)
                 target_f[0][action] = target
                 self.memory.append([observation, target_f])
 
@@ -160,7 +160,7 @@ class DeepLearningModel:
 
                 observation = new_observation
             print()
-            #print(f"Epsilon: {self.epsilon}")
+            # print(f"Epsilon: {self.epsilon}")
             print(f'Decizii luate de model: {num_model_decisions}')
             total_profit = self.evaluate()
             if total_profit > self.best_profit:
