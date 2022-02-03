@@ -94,14 +94,6 @@ class StocksNewsEnv(TradingEnv):
                 return -0.2
             return 1
 
-
-        # diff = 1 - (current_price / next_day_price)
-        #
-        # if action == Actions.Buy.value or action == Actions.Hold.value:
-        #     return diff
-        # if action == Actions.Sell.value:
-        #     return -diff
-
     def _update_profit(self, action):
         current_price = self.prices[self._current_tick]
 
