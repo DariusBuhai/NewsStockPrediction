@@ -51,7 +51,11 @@ Predict and learn how to trade based on stock prices and news analytics.
 - **The model is given an initial balance of 1000$ to trade.**
 
 - ### The VOO Stock
-  - Profit: 1101$ after 1200 days.
+  - Unoptimized Algorithm after 10 interations ($9.26 profit)
+  ![](plots/voo/10iterations_unoptimized.png)
+  - Unoptimized Algorithm after 20 interations ($515 profit)
+  ![](plots/voo/20interations_unoptimized.png)
+  - Best Profit: 1101$ after 1200 days. (Optimized algorithm)
   ![](plots/voo/25iterations_optimized.png)
 - ### The UiPath stock
   - Profit: 22$ after 90 days.
