@@ -35,37 +35,28 @@ class StocksNewsEnv(TradingEnv):
                 diff_prices = prices_current - prices_prev
                 price_features.append(diff_prices)
 
-            # price_current = round(prices[idx], 4)
-            # price_last_day = round(prices[idx-1], 4)
-            # price_before_window = round(prices[idx-self.window_size], 4)
-            # diff_percentage_window = round(1 - (price_current / price_before_window), 6) * 100
-            # diff_percentage_day = round(1 - (price_current / price_last_day), 6) * 100
-            # price_features.append([diff_percentage_window, diff_percentage_day])
-
         price_features = np.array(price_features)
 
-        # Articles for each day
-        trade_days = [x.strftime("%Y-%m-%d") for x in
-                      list(self.stocks_df.loc[:, 'Date'][self.frame_bound[0]:self.frame_bound[1]])]
-        articles = []
-        for trade_day in trade_days:
-            if trade_day in self.news_df.keys():
-                articles.append(self.news_df[trade_day]['articles'])
-            else:
-                articles.append([])
-        article_features = []
-
-        for day in articles:
-            words_usages, sentimental_analysis = np.zeros(30), np.zeros(2)
-            for article in day:
-                words_usages = np.add(words_usages, WordProcessing.getWordsUsages(self.bao, article))
-                sentimental_analysis = np.add(sentimental_analysis, WordProcessing.getSentimentalAnalysis(article))
-            article_features.append(np.concatenate((words_usages, sentimental_analysis)))
-        article_features = np.array(article_features)
+        # Articles features - not used for the moment
+        # trade_days = [x.strftime("%Y-%m-%d") for x in
+        #               list(self.stocks_df.loc[:, 'Date'][self.frame_bound[0]:self.frame_bound[1]])]
+        # articles = []
+        # for trade_day in trade_days:
+        #     if trade_day in self.news_df.keys():
+        #         articles.append(self.news_df[trade_day]['articles'])
+        #     else:
+        #         articles.append([])
+        # article_features = []
+        #
+        # for day in articles:
+        #     words_usages, sentimental_analysis = np.zeros(30), np.zeros(2)
+        #     for article in day:
+        #         words_usages = np.add(words_usages, WordProcessing.getWordsUsages(self.bao, article))
+        #         sentimental_analysis = np.add(sentimental_analysis, WordProcessing.getSentimentalAnalysis(article))
+        #     article_features.append(np.concatenate((words_usages, sentimental_analysis)))
+        # article_features = np.array(article_features)
         # Concatenate features
         features = price_features
-        #  Returnam price_features in loc de features - momentan modelul nu reuseste sa invete cu
-        #  toate feature-urile.
         return prices, features
 
     def _calculate_reward(self, action, actual_action):

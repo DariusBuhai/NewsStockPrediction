@@ -1,17 +1,9 @@
-# from cube.api import Cube
 from typing import List
 
 from modules.news import News
 
 
 class WordProcessing(News):
-    # @staticmethod
-    # def getTextScore(text) -> int:
-    #     cube = Cube(verbose=False)
-    #     cube.load("en", device='cpu')
-    #     document = cube(text)
-    #     return 1
-
     def getBagOfWords(self):
         useless_words = [self.KEYWORDS[self.stock].lower(), self.stock.lower(), "to", "for", "-", "and", "", "the",
                          "are", "has", "chars]", "that", "from", "with", "have", "its", "was", "(Reuters)"]
