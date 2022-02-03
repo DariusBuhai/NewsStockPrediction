@@ -52,13 +52,13 @@ Predict and learn how to trade based on stock prices and news analytics.
 
 - ### The VOO Stock
   - Profit: 1101$ after 1200 days.
-  ![](/home/worg/Documents/Cursuri/RL/NewsStockPrediction/plots/voo/25iterations_optimized.png)
+  ![](plots/voo/25iterations_optimized.png)
 - ### The UiPath stock
   - Profit: 22$ after 90 days.
-  ![](/home/worg/Documents/Cursuri/RL/NewsStockPrediction/plots/path/25iterations.png)
+  ![](plots/path/25iterations.png)
 - ### The Pfizer stock
   - Profit: 238$ after 150 days.
-  ![](/home/worg/Documents/Cursuri/RL/NewsStockPrediction/plots/pfizer/25iterations.png)
+  ![](plots/pfizer/25iterations.png)
 
   
 
